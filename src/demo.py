@@ -10,7 +10,7 @@ import os.path as osp
 from opts import opts
 from tracking_utils.utils import mkdir_if_missing
 from tracking_utils.log import logger
-import datasets.dataset.jde as datasets
+import lib.datasets.dataset.jde as datasets
 from track import eval_seq
 
 
@@ -22,9 +22,11 @@ def demo(opt):
     mkdir_if_missing(result_root)
 
     logger.info('Starting tracking...')
-    dataloader = datasets.LoadVideo(opt.input_video, opt.img_size)
+
+    #dataloader = datasets.LoadVideo(opt.input_video, opt.img_size)
+    dataloader = datasets.LoadImages(opt.input_video)
     result_filename = os.path.join(result_root, 'results.txt')
-    frame_rate = dataloader.frame_rate
+    frame_rate = 0.5#dataloader.frame_rate
 
     frame_dir = None if opt.output_format == 'text' else osp.join(result_root, 'frame')
     try:

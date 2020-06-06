@@ -4,7 +4,7 @@ import scipy
 from cython_bbox import bbox_overlaps as bbox_ious
 from scipy.spatial.distance import cdist
 from tracking_utils import kalman_filter
-
+from tracking_utils.log import dbglogger
 
 def merge_matches(m1, m2, shape):
     O,P,Q = shape
@@ -88,6 +88,23 @@ def iou_distance(atracks, btracks):
 
     return cost_matrix
 
+def embedding_box_distance(atracks, btracks, alpha=0.5):
+    """
+    Compute cost based on linear combination of box distance and embedding
+    """
+    dists = np.zeros((len(atracks), len(btracks)), dtype=np.float)
+    if dists.size > 0:
+        dists =[]
+    
+        for at in atracks:
+            a_center = at.to_xyah()
+            nr = []
+            for bt in btracks:
+                b_center = bt.to_xyah()
+                nr.append(np.linalg.norm(a_center-b_center)/ (a_center[3]+b_center[3]))
+            dists.append(np.array(nr))
+    return np.array(dists)
+
 def embedding_distance(tracks, detections, metric='cosine'):
     """
     :param tracks: list[STrack]
@@ -106,6 +123,21 @@ def embedding_distance(tracks, detections, metric='cosine'):
     cost_matrix = np.maximum(0.0, cdist(track_features, det_features, metric))  # Nomalized features
     return cost_matrix
 
+def embedding_distance_max_of_all_embeddings(tracks, detections, metric='cosine'):
+    cost_matrix = np.zeros((len(tracks), len(detections)), dtype=np.float)
+    if cost_matrix.size == 0:
+        return cost_matrix
+    det_features = np.asarray([track.curr_feat for track in detections], dtype=np.float)
+    #print(det_features.shape)
+    for i, track in enumerate(tracks):
+        for j, det in enumerate(detections):
+            mx = 0.0
+            for features in track.features:
+                #print(features.shape)
+                #print(det.curr_feat.shape)
+                mx = np.maximum(mx, cdist(features.reshape(1,-1), det.curr_feat.reshape(1,-1), metric))
+            cost_matrix[i,j] = mx
+    return cost_matrix
 
 def gate_cost_matrix(kf, cost_matrix, tracks, detections, only_position=False):
     if cost_matrix.size == 0:

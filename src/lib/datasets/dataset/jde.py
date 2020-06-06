@@ -47,6 +47,8 @@ class LoadImages:  # for inference
 
         # Read image
         img0 = cv2.imread(img_path)  # BGR
+        if img0 is None:
+            return None, None, None
         assert img0 is not None, 'Failed to load ' + img_path
 
         # Padded resize
